@@ -6,6 +6,7 @@ Created on Tue Nov 19 11:54:09 2019
 
 This code will record an image of the joint of interest from a webcam
 """
+#This has been a sample github edit
 
 #import need libraries
 
