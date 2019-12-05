@@ -15,7 +15,9 @@ import os.path
 Green: [77,32,0] [101,202,255]
 Yellow: [20,73,75] [303,255,255]
 Blue: [86,96,78] [117,227,255]
+Pink: [3,137,59] [11,255,255]
 """
+
 #capture an image from the camera; 0 = built in webcam or external camera
 cap = cv2.VideoCapture(0)
 ret, frame = cap.read()
@@ -27,11 +29,12 @@ color1_min = numpy.array([20,73,75])
 color1_max = numpy.array([30,255,255])
 color2_min = numpy.array([86,96,78])
 color2_max = numpy.array([117,227,255])
+color3_min = numpy.array([3,137,59])
+color3_max = numpy.array([11,255,255])
 
 #create windows to display image (filtered and original)
 cv2.namedWindow('frame')
 cv2.namedWindow('filter')
-
 """
 cv2.namedWindow('rgbFilter')
 cv2.namedWindow('hsvFilter')
@@ -86,20 +89,20 @@ while keypressed != 27:
     color0_mask = cv2.inRange(hsv, color0_min, color0_max)
     color1_mask = cv2.inRange(hsv, color1_min, color1_max)
     color2_mask = cv2.inRange(hsv, color2_min, color2_max)
+    color3_mask = cv2.inRange(hsv, color3_min, color3_max)
     
     #Create filtered image for each individual color
     color0_filter = cv2.bitwise_and(frame,frame, mask=color0_mask)
     color1_filter = cv2.bitwise_and(frame,frame, mask=color1_mask)
     color2_filter = cv2.bitwise_and(frame,frame, mask=color2_mask)
+    color3_filter = cv2.bitwise_and(frame,frame, mask=color3_mask)
     
     #Combine each filtered image to have one master filter
-    filtered = cv2.bitwise_or(cv2.bitwise_or(color0_filter, color1_filter), color2_filter)
+    filtered = cv2.bitwise_or(cv2.bitwise_or(cv2.bitwise_or(color0_filter, color1_filter), color2_filter), color3_filter)
     
     #show frame and filtered images
     cv2.imshow('frame',frame)
     cv2.imshow('filter',filtered)
-    cv2.imshow('test0',color0_filter)
-    cv2.imshow('test1',color1_filter)
     
     """
     cv2.imshow('rgbFilter',filterRGB)
