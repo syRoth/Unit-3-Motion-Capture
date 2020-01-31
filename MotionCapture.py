@@ -16,6 +16,12 @@ Green: [77,32,0] [101,202,255]
 Yellow: [20,73,75] [303,255,255]
 Blue: [86,96,78] [117,227,255]
 Pink: [3,137,59] [11,255,255]
+
+Buttons:
+Blue: [100,25,10] [180,255,225]
+Red: [0,175,50] [15,255,215]
+Green: [50,65,60] [140,230,120]
+Yellow: [10,150,20] [30,255,255]
 """
 
 #capture an image from the camera; 0 = built in webcam or external camera
@@ -23,20 +29,23 @@ cap = cv2.VideoCapture(0)
 ret, frame = cap.read()
 
 #Filter ranges for each color (HSV)
-color0_min = numpy.array([77,32,0])
-color0_max = numpy.array([101,202,255])
-color1_min = numpy.array([20,73,75])
-color1_max = numpy.array([30,255,255])
-color2_min = numpy.array([86,96,78])
-color2_max = numpy.array([117,227,255])
-color3_min = numpy.array([3,137,59])
-color3_max = numpy.array([11,255,255])
+color0_min = numpy.array([100,25,10])
+color0_max = numpy.array([180,255,255])
+color1_min = numpy.array([0,175,50])
+color1_max = numpy.array([15,255,215])
+color2_min = numpy.array([50,65,40])
+color2_max = numpy.array([140,230,180])
+color3_min = numpy.array([10,150,20])
+color3_max = numpy.array([30,225,255])
 
 #create windows to display image (filtered and original)
 cv2.namedWindow('frame')
 cv2.namedWindow('filter')
+cv2.namedWindow('erode')
+cv2.namedWindow('dilate')
 """
 cv2.namedWindow('rgbFilter')
+
 cv2.namedWindow('hsvFilter')
 
 cv2.namedWindow('min')
@@ -100,9 +109,16 @@ while keypressed != 27:
     #Combine each filtered image to have one master filter
     filtered = cv2.bitwise_or(cv2.bitwise_or(cv2.bitwise_or(color0_filter, color1_filter), color2_filter), color3_filter)
     
+    #Erode the image
+    kernel = numpy.ones((5,5), numpy.uint8)
+    eroded = cv2.erode(filtered, kernel, iterations=3)
+    dilated = cv2.dilate(eroded, kernel, iterations=1)
+    
     #show frame and filtered images
     cv2.imshow('frame',frame)
     cv2.imshow('filter',filtered)
+    cv2.imshow('erode',eroded)
+    cv2.imshow('dilate',dilated)
     
     """
     cv2.imshow('rgbFilter',filterRGB)
