@@ -11,124 +11,154 @@ import cv2
 import numpy
 import os.path
 
-"""Filter Settings for different colors in form of min[H,S,V] max[H,S,V]:
+"""
+Filter Settings for different colors in form of min[H,S,V] max[H,S,V]:
 Green: [77,32,0] [101,202,255]
 Yellow: [20,73,75] [303,255,255]
 Blue: [86,96,78] [117,227,255]
 Pink: [3,137,59] [11,255,255]
 
-Buttons:
+First try Buttons:
 Blue: [100,25,10] [180,255,225]
 Red: [0,175,50] [15,255,215]
 Green: [50,65,60] [140,230,120]
 Yellow: [10,150,20] [30,255,255]
+
+Second try Buttons:
+Blue: [106,0,0] [126,0,0]
+Red: [3,155,0] [15,255,255]
+Green: [70,60,80] [110,170,255]
+Yellow: [20,70,0] [35,255,255]
 """
 
-#capture an image from the camera; 0 = built in webcam or external camera
-cap = cv2.VideoCapture(0)
-ret, frame = cap.read()
-
-#Filter ranges for each color (HSV)
-color0_min = numpy.array([100,25,10])
-color0_max = numpy.array([180,255,255])
-color1_min = numpy.array([0,175,50])
-color1_max = numpy.array([15,255,215])
-color2_min = numpy.array([50,65,40])
-color2_max = numpy.array([140,230,180])
-color3_min = numpy.array([10,150,20])
-color3_max = numpy.array([30,225,255])
-
-#create windows to display image (filtered and original)
-cv2.namedWindow('frame')
-cv2.namedWindow('filter')
-cv2.namedWindow('erode')
-cv2.namedWindow('dilate')
-"""
-cv2.namedWindow('rgbFilter')
-
-cv2.namedWindow('hsvFilter')
-
-cv2.namedWindow('min')
-cv2.namedWindow('max')
-
-
-#Min RGB
-cv2.createTrackbar('minR','min', 0, 255, lambda x:None)
-cv2.createTrackbar('minG','min', 0, 255, lambda x:None)
-cv2.createTrackbar('minB','min', 0, 255, lambda x:None)
-#Max RGB
-cv2.createTrackbar('maxR','max', 255, 255, lambda x:None)
-cv2.createTrackbar('maxG','max', 255, 255, lambda x:None)
-cv2.createTrackbar('maxB','max', 255, 255, lambda x:None)
-
-#Min HSV
-cv2.createTrackbar('minH','min', 0, 180, lambda x:None)
-cv2.createTrackbar('minS','min', 0, 255, lambda x:None)
-cv2.createTrackbar('minV','min', 0, 255, lambda x:None)
-#Max HSV
-cv2.createTrackbar('maxH','max', 180, 180, lambda x:None)
-cv2.createTrackbar('maxS','max', 255, 255, lambda x:None)
-cv2.createTrackbar('maxV','max', 255, 255, lambda x:None)
-"""
-
-keypressed = 1
-while keypressed != 27:
-    #read a frame from the video capture
-    ret, frame = cap.read()
-    #Create HSV converted frame
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    
-    """
-    #create lower and upper bounds using trackbar position for RGB and HSV
-    lowerRGB = numpy.array([cv2.getTrackbarPos('minB','min'), cv2.getTrackbarPos('minG','min'), cv2.getTrackbarPos('minR','min')])
-    upperRGB = numpy.array([cv2.getTrackbarPos('maxB','max'), cv2.getTrackbarPos('maxG','max'), cv2.getTrackbarPos('maxR','max')])
-    
-    lowerHSV = numpy.array([cv2.getTrackbarPos('minH','min'),cv2.getTrackbarPos('minS','min'),cv2.getTrackbarPos('minV','min')])
-    upperHSV = numpy.array([cv2.getTrackbarPos('maxH','max'),cv2.getTrackbarPos('maxS','max'),cv2.getTrackbarPos('maxV','max')])
+class Color():
+    def __init__(self, color_min, color_max):
+        self.min = color_min
+        self.max = color_max
         
-    #create mask and filter for RGB and HSV
-    maskRGB = cv2.inRange(frame, lowerRGB, upperRGB)
-    filterRGB = cv2.bitwise_and(frame,frame, mask=maskRGB)
+    def color_filter(self, hsv, frame):
+        mask = cv2.inRange(hsv, self.min, self.max)
+        self.filter = cv2.bitwise_and(frame,frame, mask=mask)
+        return(self.filter)
+
+    def centroid(self):
+        #Centroid code
+        image = self.color_filter()
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        ret,thresh = cv2.threshold(gray_image,127,255,0)
+        M = cv2.moments(thresh)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        cv2.circle(image, (cX, cY), 5, (255,255,255), -1)
+        return(image)
+
+def run_filter():
+    # Capture an image from the camera; 0 = built in webcam or external camera
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
     
-    maskHSV = cv2.inRange(hsv, lowerHSV, upperHSV)
-    filterHSV = cv2.bitwise_and(frame,frame, mask=maskHSV)
-    """
+    # Create windows for display
+    cv2.namedWindow('frame')
+    cv2.namedWindow('filter')
+    cv2.namedWindow('erode/dilate')
     
-    #Create masks for each color using their predeclared restrictions
-    color0_mask = cv2.inRange(hsv, color0_min, color0_max)
-    color1_mask = cv2.inRange(hsv, color1_min, color1_max)
-    color2_mask = cv2.inRange(hsv, color2_min, color2_max)
-    color3_mask = cv2.inRange(hsv, color3_min, color3_max)
+    keypressed = 1
     
-    #Create filtered image for each individual color
-    color0_filter = cv2.bitwise_and(frame,frame, mask=color0_mask)
-    color1_filter = cv2.bitwise_and(frame,frame, mask=color1_mask)
-    color2_filter = cv2.bitwise_and(frame,frame, mask=color2_mask)
-    color3_filter = cv2.bitwise_and(frame,frame, mask=color3_mask)
+    # Initialize colors
+    color0 = Color(numpy.array([106,0,0]), numpy.array([126,255,255]))
+    color1 = Color(numpy.array([3,155,0]), numpy.array([15,255,255]))
+    color2 = Color(numpy.array([70,60,80]), numpy.array([110,170,255]))
+    color3 = Color(numpy.array([20,70,0]), numpy.array([35,225,255]))
     
-    #Combine each filtered image to have one master filter
-    filtered = cv2.bitwise_or(cv2.bitwise_or(cv2.bitwise_or(color0_filter, color1_filter), color2_filter), color3_filter)
+    while keypressed != 27:
+        # Read a frame from the video capture
+        ret, frame = cap.read()
+        
+        # Create HSV converted frame
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        # Create each color filter
+        color0_filter = color0.color_filter(hsv, frame)
+        color1_filter = color1.color_filter(hsv, frame)
+        color2_filter = color2.color_filter(hsv, frame)
+        color3_filter = color3.color_filter(hsv, frame)
+        
+        # Combine all color filters
+        filtered = cv2.bitwise_or(cv2.bitwise_or(cv2.bitwise_or(color0_filter, color1_filter), color2_filter), color3_filter)
+        
+        # Erode/Dilate
+        kernel = numpy.ones((5,5), numpy.uint8)
+        eroded = cv2.erode(filtered, kernel, iterations=3)
+        dilated = cv2.dilate(eroded, kernel, iterations=5)
+        
+        # Show images
+        cv2.imshow('frame', frame)
+        cv2.imshow('filter', filtered)
+        cv2.imshow('erode/dilate', dilated)
+        
+        # Wait for button press
+        keypressed = cv2.waitKey(1)
+        
+    if keypressed == 27:
+        # Destroy windows
+        cv2.destroyAllWindows()
+        cap.release()
+
+def find_filter():
+    # Capture an image from the camera; 0 = built in webcam or external camera
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
     
-    #Erode the image
+    # Create windows for display
+    cv2.namedWindow('HSV_filter')
+    cv2.namedWindow('min')
+    cv2.namedWindow('max')
+
+    # Min HSV trackbars
+    cv2.createTrackbar('minH','min', 0, 180, lambda x:None)
+    cv2.createTrackbar('minS','min', 0, 255, lambda x:None)
+    cv2.createTrackbar('minV','min', 0, 255, lambda x:None)
+    # Max HSV trackbars
+    cv2.createTrackbar('maxH','max', 180, 180, lambda x:None)
+    cv2.createTrackbar('maxS','max', 255, 255, lambda x:None)
+    cv2.createTrackbar('maxV','max', 255, 255, lambda x:None)
+    
+    keypressed = 1
+    while keypressed != 27:
+        # Read a frame from the video capture
+        ret, frame = cap.read()
+        
+        # Create HSV converted frame
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        # Update lower and upper HSV values from trackbar
+        lowerHSV = numpy.array([cv2.getTrackbarPos('minH','min'),cv2.getTrackbarPos('minS','min'),cv2.getTrackbarPos('minV','min')])
+        upperHSV = numpy.array([cv2.getTrackbarPos('maxH','max'),cv2.getTrackbarPos('maxS','max'),cv2.getTrackbarPos('maxV','max')])
+        
+        # Create HSV mask and filter
+        HSV_mask = cv2.inRange(hsv, lowerHSV, upperHSV)
+        HSV_filter = cv2.bitwise_and(frame,frame, mask=HSV_mask)
+        
+        # Show image
+        cv2.imshow('HSV_filter', HSV_filter)
+        
+        # Wait for button press
+        keypressed = cv2.waitKey(1)
+        
+    if keypressed == 27:
+        # Destroy windows
+        cv2.destroyAllWindows()
+        cap.release()
+
+def erode_dilate(filtered):
+    #Erode and dilate the image
     kernel = numpy.ones((5,5), numpy.uint8)
     eroded = cv2.erode(filtered, kernel, iterations=3)
-    dilated = cv2.dilate(eroded, kernel, iterations=1)
+    dilated = cv2.dilate(eroded, kernel, iterations=5)
     
     #show frame and filtered images
-    cv2.imshow('frame',frame)
-    cv2.imshow('filter',filtered)
     cv2.imshow('erode',eroded)
     cv2.imshow('dilate',dilated)
-    
-    """
-    cv2.imshow('rgbFilter',filterRGB)
-    cv2.imshow('hsvFilter',filterHSV)
-    """
-    
-    #wait for button press
-    keypressed = cv2.waitKey(1)
-    
-if keypressed == 27:
-    #destroy windows
-    cv2.destroyAllWindows()
-    cap.release()
+
+
+run_filter()
