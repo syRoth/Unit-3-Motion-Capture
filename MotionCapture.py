@@ -41,14 +41,33 @@ class Color():
         self.filter = cv2.bitwise_and(frame,frame, mask=mask)
         return(self.filter)
 
-    def centroid(self):
-        #Centroid code
-        image = self.color_filter()
+    def centroid(self, hsv, frame):
+        # Find centroid of dilated image
+        image = self.color_filter(hsv, frame)
+        kernel = numpy.ones((5,5), numpy.uint8)
+        eroded = cv2.erode(image, kernel, iterations=3)
+        dilated = cv2.dilate(eroded, kernel, iterations=7)
+        #eroded = cv2.erode(dilated, kernel, iterations=5)
+        #dilated = cv2.dilate(eroded, kernel, iterations=7)
+        image = dilated
+        
+        # Make it grayscale, threshold it, find the moments
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        ret,thresh = cv2.threshold(gray_image,127,255,0)
+        ret,thresh = cv2.threshold(gray_image,0,255,0)
+        cv2.imshow('test',thresh)
         M = cv2.moments(thresh)
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
+        print(M["m00"])
+        # So we don't divide by zero
+        if(M["m00"] != 0):
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            print("X:" + str(cX) + "  Y:" + str(cY))
+        else:
+            if ('cX' in globals()) and ('cY' in globals()):
+                pass
+            else:
+                cX, cY = 0, 0
+        # Make the circle in the coordinates
         cv2.circle(image, (cX, cY), 5, (255,255,255), -1)
         return(image)
 
@@ -61,6 +80,7 @@ def run_filter():
     cv2.namedWindow('frame')
     cv2.namedWindow('filter')
     cv2.namedWindow('erode/dilate')
+    cv2.namedWindow('centroid')
     
     keypressed = 1
     
@@ -91,10 +111,14 @@ def run_filter():
         eroded = cv2.erode(filtered, kernel, iterations=3)
         dilated = cv2.dilate(eroded, kernel, iterations=5)
         
+        # Find centroids
+        centroid = color3.centroid(hsv, frame)
+        
         # Show images
         cv2.imshow('frame', frame)
         cv2.imshow('filter', filtered)
         cv2.imshow('erode/dilate', dilated)
+        cv2.imshow('centroid', centroid)
         
         # Wait for button press
         keypressed = cv2.waitKey(1)
@@ -149,16 +173,6 @@ def find_filter():
         # Destroy windows
         cv2.destroyAllWindows()
         cap.release()
-
-def erode_dilate(filtered):
-    #Erode and dilate the image
-    kernel = numpy.ones((5,5), numpy.uint8)
-    eroded = cv2.erode(filtered, kernel, iterations=3)
-    dilated = cv2.dilate(eroded, kernel, iterations=5)
-    
-    #show frame and filtered images
-    cv2.imshow('erode',eroded)
-    cv2.imshow('dilate',dilated)
 
 
 run_filter()
