@@ -91,6 +91,7 @@ def run_filter():
     cv2.namedWindow('erode/dilate')
     cv2.namedWindow('centroid')
     cv2.namedWindow('connections')
+    cv2.namedWindow('angle')
     
     keypressed = 1
     
@@ -143,21 +144,23 @@ def run_filter():
         cv2.line(connections, (color2.centroid[0], color2.centroid[1]), (color3.centroid[0], color3.centroid[1]), (255,255,255), 5)
         
         # Calculate intersection point
-        if( (color1.centroid[0] - color0.centroid[0]) != 0 and (color3.centroid[0] - color2.centroid[0]) != 0 and (color01_slope - color23_slope) != 0):
+        if( (color1.centroid[0] - color0.centroid[0]) != 0 and (color3.centroid[0] - color2.centroid[0]) != 0):
             color01_slope = float(color1.centroid[1] - color0.centroid[1]) / (color1.centroid[0] - color0.centroid[0])
             color23_slope = float(color3.centroid[1] - color2.centroid[1]) / (color3.centroid[0] - color2.centroid[0])
-            intersection[0] = (-color1.centroid[1] + color3.centroid[1] + color01_slope*color1.centroid[0] - color23_slope*color3.centroid[0])/(color01_slope - color23_slope)
-            intersection[1] = color01_slope*(intersection[0]-color1.centroid[0]) + color1.centroid[1]
-            cv2.circle(connections, (int(intersection[0]), int(intersection[1])), 5, (255,255,255), -1)
-        
+            if( (color01_slope - color23_slope) != 0):
+                intersection[0] = (-color1.centroid[1] + color3.centroid[1] + color01_slope*color1.centroid[0] - color23_slope*color3.centroid[0])/(color01_slope - color23_slope)
+                intersection[1] = color01_slope*(intersection[0]-color1.centroid[0]) + color1.centroid[1]
         # Calculate angles (points are color0, color2, and intersection)
+        angle = connections
         if( (intersection[0] - color0.centroid[0]) != 0 and (intersection[0] - color2.centroid[0]) != 0):
-            a = math.degrees( math.atan( (intersection[1] - color0.centroid[1]) / (intersection[0] - color0.centroid[0]) ) )
-            b = math.degrees( math.atan( (intersection[1] - color2.centroid[1]) / (intersection[0] - color2.centroid[0]) ) )
+            a_height = abs(color2.centroid[1] - intersection[1])
+            a_base = abs(color2.centroid[0] - intersection[0])
+            a = math.degrees(math.atan(a_height / a_base))
+            b_height = abs(color0.centroid[1] - intersection[1])
+            b_base = abs(color0.centroid[0] - intersection[0])
+            b = math.degrees(math.atan(b_height / b_base))
             theta = 180 - a - b
-            print(a)
-            print(b)
-            print(theta)
+            cv2.putText(angle, ("Angle: " + str(theta)), (200,200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 5)
         
         # Show images
         cv2.imshow('frame', frame)
@@ -165,6 +168,7 @@ def run_filter():
         cv2.imshow('erode/dilate', erode_dilate)
         cv2.imshow('centroid', centroid)
         cv2.imshow('connections', connections)
+        cv2.imshow('angle' ,angle)
         
         # Wait for button press
         keypressed = cv2.waitKey(1)
@@ -220,4 +224,49 @@ def find_filter():
         cv2.destroyAllWindows()
         cap.release()
 
+def test_math():
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
+    cv2.namedWindow('frame')
+    
+    color0 = Color(0,0)
+    color0.centroid = (50,50)
+    cv2.circle(frame, color0.centroid, 5, (255,0,0), -1)
+    color1 = Color(0,0)
+    color1.centroid = (80,100)
+    cv2.circle(frame, color1.centroid, 5, (0,255,0), -1)
+    color2 = Color(0,0)
+    color2.centroid = (190,110)
+    cv2.circle(frame, color2.centroid, 5, (0,0,255), -1)
+    color3 = Color(0,0)
+    color3.centroid = (150,130)
+    cv2.circle(frame, color3.centroid, 5, (0,0,0), -1)
+    cv2.circle(frame, (110,150), 5, (255,255,255), -1)
+    
+    intersection = [0,0]
+    
+    if( (color1.centroid[0] - color0.centroid[0]) != 0 and (color3.centroid[0] - color2.centroid[0]) != 0):
+            color01_slope = float(color1.centroid[1] - color0.centroid[1]) / (color1.centroid[0] - color0.centroid[0])
+            color23_slope = float(color3.centroid[1] - color2.centroid[1]) / (color3.centroid[0] - color2.centroid[0])
+            if( (color01_slope - color23_slope) != 0):
+                intersection[0] = (-color1.centroid[1] + color3.centroid[1] + color01_slope*color1.centroid[0] - color23_slope*color3.centroid[0])/(color01_slope - color23_slope)
+                intersection[1] = color01_slope*(intersection[0]-color1.centroid[0]) + color1.centroid[1]
+    # Calculate angles (points are color0, color2, and intersection)
+    if( (intersection[0] - color0.centroid[0]) != 0 and (intersection[0] - color2.centroid[0]) != 0):
+        a_height = abs(color2.centroid[1] - intersection[1])
+        a_base = abs(color2.centroid[0] - intersection[0])
+        a = math.degrees(math.atan(a_height / a_base))
+        b_height = abs(color0.centroid[1] - intersection[1])
+        b_base = abs(color0.centroid[0] - intersection[0])
+        b = math.degrees(math.atan(b_height / b_base))
+        theta = 180 - a - b
+            
+    keypressed = 1
+    while keypressed != 27:
+        cv2.imshow('frame',frame)
+        keypressed = cv2.waitKey(1)
+    if keypressed == 27:
+        cv2.destroyAllWindows()
+        cap.release()
+        
 run_filter()
