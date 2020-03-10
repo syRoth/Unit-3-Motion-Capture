@@ -85,7 +85,7 @@ def run_filter():
     # Capture an image from the camera; 0 = built in webcam or external camera
     cap = cv2.VideoCapture(0)
     ret, frame = cap.read()
-    
+    theta = 90
     # Create windows for display
     cv2.namedWindow('frame')
     #cv2.namedWindow('filter')
@@ -163,7 +163,10 @@ def run_filter():
             b_base = abs(color0.centroid[0] - intersection[0])
             b = math.degrees(math.atan(b_height / b_base))
             theta = 180 - a - b
-            cv2.putText(angle, ("Angle: " + str(theta)), (8,467), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 3)
+            cv2.putText(angle, ("Angle: " + str(theta)), (8,467), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
+        
+        # Check if angle bounds have been surpassed
+        alert(theta, 135, 45, angle)
         
         # Show images
         cv2.imshow('frame', frame)
@@ -180,6 +183,21 @@ def run_filter():
         # Destroy windows
         cv2.destroyAllWindows()
         cap.release()
+
+def alert(theta, upper_bound, lower_bound, frame):
+    if theta < lower_bound:
+        pysine.sine(660,0.06)
+        pysine.sine(928,0.04)
+        cv2.putText(frame, "Lower Bound Surpassed", (8,22), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+        
+    elif theta > upper_bound:
+        pysine.sine(660,0.05)
+        pysine.sine(928,0.07)
+        cv2.putText(frame, "Upper Bound Surpassed", (8,22), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+    
+    else:
+        cv2.putText(frame, "Within Correct Range", (8,22), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
 
 def find_filter():
     # Capture an image from the camera; 0 = built in webcam or external camera
@@ -226,9 +244,6 @@ def find_filter():
         # Destroy windows
         cv2.destroyAllWindows()
         cap.release()
-
-def beep():
-    
 
 def test_math():
     cap = cv2.VideoCapture(0)
