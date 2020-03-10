@@ -11,6 +11,7 @@ import cv2
 import numpy
 import os.path
 import math
+import pysine
 
 """
 Filter Settings for different colors in form of min[H,S,V] max[H,S,V]:
@@ -87,10 +88,10 @@ def run_filter():
     
     # Create windows for display
     cv2.namedWindow('frame')
-    cv2.namedWindow('filter')
-    cv2.namedWindow('erode/dilate')
-    cv2.namedWindow('centroid')
-    cv2.namedWindow('connections')
+    #cv2.namedWindow('filter')
+    #cv2.namedWindow('erode/dilate')
+    #cv2.namedWindow('centroid')
+    #cv2.namedWindow('connections')
     cv2.namedWindow('angle')
     
     keypressed = 1
@@ -153,6 +154,8 @@ def run_filter():
         # Calculate angles (points are color0, color2, and intersection)
         angle = connections
         if( (intersection[0] - color0.centroid[0]) != 0 and (intersection[0] - color2.centroid[0]) != 0):
+            # Creates two right triangles, with each line drawn being the hyptoneuse of those triangles
+            # Then uses trig rules to calculate the angle
             a_height = abs(color2.centroid[1] - intersection[1])
             a_base = abs(color2.centroid[0] - intersection[0])
             a = math.degrees(math.atan(a_height / a_base))
@@ -160,14 +163,14 @@ def run_filter():
             b_base = abs(color0.centroid[0] - intersection[0])
             b = math.degrees(math.atan(b_height / b_base))
             theta = 180 - a - b
-            cv2.putText(angle, ("Angle: " + str(theta)), (200,200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 5)
+            cv2.putText(angle, ("Angle: " + str(theta)), (8,467), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 3)
         
         # Show images
         cv2.imshow('frame', frame)
-        cv2.imshow('filter', filtered)
-        cv2.imshow('erode/dilate', erode_dilate)
-        cv2.imshow('centroid', centroid)
-        cv2.imshow('connections', connections)
+        #cv2.imshow('filter', filtered)
+        #cv2.imshow('erode/dilate', erode_dilate)
+        #cv2.imshow('centroid', centroid)
+        #cv2.imshow('connections', connections)
         cv2.imshow('angle' ,angle)
         
         # Wait for button press
@@ -223,6 +226,9 @@ def find_filter():
         # Destroy windows
         cv2.destroyAllWindows()
         cap.release()
+
+def beep():
+    
 
 def test_math():
     cap = cv2.VideoCapture(0)
